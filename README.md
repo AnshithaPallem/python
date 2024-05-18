@@ -48,62 +48,43 @@ def generate_random_password(length=12):
 random_password = generate_random_password()
 print("Random Password:", random_password)
 
-# voice assistant
-import speech_recognition as sr
-import pyttsx3
-import datetime
-import webbrowser
+# basic weather app
+import requests
 
-recognizer = sr.Recognizer()
-
-engine = pyttsx3.init()
-
-def speak(text):
-    engine.say(text)
-    engine.runAndWait()
-
-def listen():
-    with sr.Microphone() as source:
-        print("Listening...")
-        recognizer.adjust_for_ambient_noise(source)
-        audio = recognizer.listen(source)
-        try:
-            print("Recognizing...")
-            query = recognizer.recognize_google(audio)
-            print(f"User said: {query}")
-            return query.lower()
-        except sr.UnknownValueError:
-            print("Sorry, I couldn't understand.")
-            return ""
-        except sr.RequestError:
-            print("Request error.")
-            return ""
-
-def handle_command(command):
-    if "hello" in command:
-        speak("Hello! How can I help you?")
-    elif "time" in command:
-        current_time = datetime.datetime.now().strftime("%H:%M:%S")
-        speak(f"The current time is {current_time}")
-    elif "date" in command:
-        current_date = datetime.date.today().strftime("%B %d, %Y")
-        speak(f"Today's date is {current_date}")
-    elif "search" in command:
-        speak("What would you like me to search for?")
-        query = listen()
-        if query:
-            search_url = f"https://www.google.com/search?q={query}"
-            webbrowser.open(search_url)
-            speak(f"Here are the search results for {query}")
-    elif "exit" in command:
-        speak("Goodbye!")
-        exit()
+def get_weather(city, api_key):
+    base_url = "http://api.openweathermap.org/data/2.5/weather"
+    params = {
+        "q": city,
+        "appid": api_key,
+        "units": "metric"  # You can change units to "imperial" for Fahrenheit
+    }
+    response = requests.get(base_url, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        weather_info = {
+            "city": data["name"],
+            "description": data["weather"][0]["description"],
+            "temperature": data["main"]["temp"],
+            "humidity": data["main"]["humidity"],
+            "wind_speed": data["wind"]["speed"]
+        }
+        return weather_info
     else:
-        speak("I'm sorry, I don't understand that command.")
+        print("Error fetching weather data:", response.status_code)
+        return None
+
+def main():
+    city = input("Enter city name: ")
+    api_key = "YOUR_API_KEY"  # Replace with your actual API key from OpenWeatherMap
+    weather_info = get_weather(city, api_key)
+    if weather_info:
+        print("\nWeather Information for", weather_info["city"])
+        print("Description:", weather_info["description"])
+        print("Temperature:", weather_info["temperature"], "°C")
+        print("Humidity:", weather_info["humidity"], "%")
+        print("Wind Speed:", weather_info["wind_speed"], "m/s")
+    else:
+        print("Weather information not available.")
 
 if __name__ == "__main__":
-    speak("Hello! I am your voice assistant.")
-    while True:
-        user_input = listen()
-        if user_input:
-            handle_command(user_input)
+    main()
